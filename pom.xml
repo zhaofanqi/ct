@@ -11,6 +11,7 @@
     <modules>
         <module>Producer</module>
         <module>Consumer</module>
+        <module>analysis</module>
     </modules>
 
     <!-- https://mvnrepository.com/artifact/junit/junit -->

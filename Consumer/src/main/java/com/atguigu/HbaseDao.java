@@ -1,10 +1,8 @@
 package com.atguigu;
 
-import MyUtils.HbaseFilterUtil;
 import MyUtils.HbaseUtil;
 import constant.Constant;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -12,7 +10,6 @@ import org.apache.hadoop.hbase.util.Bytes;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.List;
 
 public class HbaseDao {
     //确定往哪张表中写数据
@@ -28,15 +25,15 @@ public class HbaseDao {
         this.tableName = tableName;
     }*/
 
-    public HbaseDao(String nameSpace, String tableName, byte[][] splitkey, String... cf1 ) {
+    public HbaseDao(String nameSpace, String tableName, byte[][] splitkey, String... cfs ) {
         try {
 
-            HbaseUtil.initNameSpace(nameSpace);
-            HbaseUtil.createTable(tableName,cf1);
+           HbaseUtil.initNameSpace(nameSpace);
+            HbaseUtil.createTable(tableName,cfs);
             //将table设置为静态类供使用
             this.tableName=tableName;
             //需要将传入列族全部放入静态columnFamily数组中
-            columnFamily=cf1.clone();
+            columnFamily=cfs.clone();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -97,6 +94,7 @@ public class HbaseDao {
         put.addColumn(Bytes.toBytes(columnFamily[0]),Bytes.toBytes("duration"),Bytes.toBytes(duration));
         put.addColumn(Bytes.toBytes(columnFamily[0]),Bytes.toBytes("flag"),Bytes.toBytes(duration));
 
+        table.put(put);
     }
     /*
     为了将put方法拆开，供2种情况使用，特将put前获取的数据和时间需要put的数据抽离出来

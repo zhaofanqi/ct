@@ -3,7 +3,10 @@ package MyUtils;
 import constant.Constant;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
@@ -30,8 +33,14 @@ public class HbaseUtil {
     }
 
     public static void initNameSpace(String nameSpace) throws IOException {
-        NamespaceDescriptor namespaceDescriptor = NamespaceDescriptor.create(nameSpace).addConfiguration("create_time", String.valueOf(System.currentTimeMillis())).build();
-        admin.createNamespace(namespaceDescriptor);
+
+       try{
+           NamespaceDescriptor namespaceDescriptor = NamespaceDescriptor.create(nameSpace).addConfiguration("create_time", String.valueOf(System.currentTimeMillis())).build();
+           admin.createNamespace(namespaceDescriptor);
+       }catch (Exception e){
+           System.out.println("namespace "+nameSpace+ "already exist_zfq");
+       }
+
       //  close(connection, admin);
     }
 
@@ -49,6 +58,8 @@ public class HbaseUtil {
         for (String cf : columnFamily) {
             tableDescriptor.addFamily(new HColumnDescriptor(cf));
         }
+        //创建表之前需要注册协处理器
+      tableDescriptor.addCoprocessor("corprocess.DoubleWrite");
         //创建表（带分区健）
         admin.createTable(tableDescriptor, getSplitKeys());
        // close(connection, admin);
@@ -100,15 +111,16 @@ public class HbaseUtil {
         return  recordHash+"_"+caller+"_"+buildTime+"_"+callee+"_"+duration;
     }
     public static  String  getRowKeyWithFlag(String caller,String callee,String buildTime,String duration,String flag){
-        //rowkey:分区位_caller_bulideTime_callee_duration
+        //rowkey:分区位_caller_bulideTime_callee_flag_duration
         //获取分区位
         String recordHash = getRecordHash(caller, buildTime);
+        System.out.println("this  is getRowKeyWithFlag "+recordHash + "_" + caller + "_" + buildTime + "_" + callee + "_" + flag + "_" + duration);
         return  recordHash+"_"+caller+"_"+buildTime+"_"+callee+"_"+flag+"_"+duration;
     }
     /*
     目的：让电话随机分布在各个区，制造分区的前三为电话号码的后四位和通话建立时间的前六位异或得到
      */
-    private static String getRecordHash(String caller,String buildTime) {
+    public  static String getRecordHash(String caller,String buildTime) {
         int regions;
         String call = caller.substring(caller.length() - 4);
         String build = buildTime.replace("-", "").substring(0, 6);

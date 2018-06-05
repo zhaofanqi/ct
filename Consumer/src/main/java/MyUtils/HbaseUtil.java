@@ -41,6 +41,7 @@ public class HbaseUtil {
            System.out.println("namespace "+nameSpace+ "already exist_zfq");
        }
 
+
       //  close(connection, admin);
     }
 

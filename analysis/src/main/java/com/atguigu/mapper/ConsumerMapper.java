@@ -13,8 +13,8 @@ public class ConsumerMapper extends BaseMapper {
     @Override
     public int compareTo(BaseMapper o) {
         ConsumerMapper other = (ConsumerMapper) o;
-        int result = this.phoneNum.compareTo(((ConsumerMapper) o).phoneNum);
-        return result;
+        return this.phoneNum.compareTo(other.phoneNum);
+
     }
 
     @Override

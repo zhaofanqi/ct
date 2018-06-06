@@ -13,7 +13,7 @@ public class CommMapper extends BaseMapper {
     @Override
     public int compareTo(BaseMapper o) {
             CommMapper other= (CommMapper) o;
-        int result=this.consumerMapper.compareTo(other.dateMapper);
+        int result=this.consumerMapper.compareTo(other.consumerMapper);
         if (result == 0) {
             result=this.dateMapper.compareTo(other.dateMapper);
         }

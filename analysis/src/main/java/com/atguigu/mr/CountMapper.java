@@ -14,10 +14,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class CountMapper  extends TableMapper<CommMapper,Text>{
-    private CommMapper commMapper=new CommMapper();
+   // private CommMapper commMapper=new CommMapper();
     private Map<String, String> phoneName = new HashMap<>();
     private Text v=new Text();
-    private ConsumerMapper consumerMapper=new ConsumerMapper();
+   // private ConsumerMapper consumerMapper=new ConsumerMapper();
 
 
     @Override
@@ -70,6 +70,9 @@ public class CountMapper  extends TableMapper<CommMapper,Text>{
         String duration =detail[5];
         v.set(duration);
 
+        ConsumerMapper consumerMapper=new ConsumerMapper();
+        CommMapper commMapper=new CommMapper();
+
         //call1维度封装
         consumerMapper.setPhoneNum(call1);
         consumerMapper.setConName(phoneName.get(call1));
@@ -84,6 +87,7 @@ public class CountMapper  extends TableMapper<CommMapper,Text>{
         commMapper.setDateMapper(monthMapper);
         //月维度书写
         context.write(commMapper,v);
+
         DateMapper dayMapper = new DateMapper(year, month,day);
         commMapper.setDateMapper(dayMapper);
         //日维度书写

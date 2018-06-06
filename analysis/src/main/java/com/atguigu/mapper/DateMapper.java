@@ -15,12 +15,12 @@ public class DateMapper extends BaseMapper {
     @Override
     public int compareTo(BaseMapper o) {
         DateMapper other = (DateMapper) o;
-        int result = this.year.compareTo(((DateMapper) o).year);
+        int result = this.year.compareTo(other.year);
         if (result == 0) {
-            result = this.month.compareTo(((DateMapper) o).month);
+            result = this.month.compareTo(other.month);
         }
         if (result == 0) {
-            result = this.day.compareTo(((DateMapper) o).day);
+            result = this.day.compareTo(other.day);
         }
         return result;
     }

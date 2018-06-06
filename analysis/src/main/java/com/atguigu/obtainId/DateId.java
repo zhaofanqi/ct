@@ -8,63 +8,101 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+/**
+ * 日期维度id 获取
+ *
+ * @author zhaofanqi
+ */
 public class DateId {
+
+    /**
+     * mysql连接
+     */
     private static Connection connection = null;
-    private static String sql1 = "SELECT `id`  FROM `tb_dimension_date` WHERE `year`=? AND `month`=? AND `day`=?;";
-    private static String sql2 = "INSERT INTO  `tb_dimension_date`  VALUES(NULL,?,?,?);";
+
+    /**
+     * 查询时间维度 id
+     */
+    private static PreparedStatement query;
+
+    /**
+     * 插入时间维度
+     */
+    private static PreparedStatement insert;
 
     static {
         try {
             connection = JDBCInstance.getInstance();
-            sql1 = "SELECT `id`  FROM `tb_dimension_date` WHERE `year`=? AND `month`=? AND `day`=?;";
-            sql2 = "INSERT INTO  `tb_dimension_date`  VALUES(NULL,?,?,?);";
+            query = connection.prepareStatement("SELECT `id`  FROM `tb_dimension_date` WHERE `year`=? AND `month`=? AND `day`=?;");
+            insert = connection.prepareStatement("INSERT INTO  `tb_dimension_date`  VALUES(NULL,?,?,?);");
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-
+    /**
+     * 获取时间维度id
+     *
+     * @param dateMapper
+     * @return
+     */
     public static int getId(DateMapper dateMapper) {
         String year = dateMapper.getYear();
         String month = dateMapper.getMonth();
         String day = dateMapper.getDay();
         try {
-            int idDateDimension = onceQuery(year, month, day);
-            if (idDateDimension != 0){
-
+            int idDateDimension = queryId(year, month, day);
+            if (idDateDimension != 0) {
+                return idDateDimension;
             }
 
-            idDateDimension = twiceQuery(year, month, day);
-            return idDateDimension;
+            return insertAndQueryId(year, month, day);
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        System.out.println("com.atguigu.obtainId.DateId 获取id失败");
+
+        System.err.println("com.atguigu.obtainId.DateId.getId 获取id失败");
         return 0;
     }
 
-    private static int twiceQuery(String year, String month, String day) throws SQLException {
-        PreparedStatement preparedStatement = connection.prepareStatement(sql2);
+    /**
+     * 插入并返回id
+     *
+     * @param year
+     * @param month
+     * @param day
+     * @return
+     * @throws SQLException
+     */
+    private static int insertAndQueryId(String year, String month, String day) throws SQLException {
         int i = 0;
-        preparedStatement.setString(++i, year);
-        preparedStatement.setString(++i, month);
-        preparedStatement.setString(++i, day);
+        insert.setString(++i, year);
+        insert.setString(++i, month);
+        insert.setString(++i, day);
+        insert.executeUpdate();
 
-        preparedStatement.executeUpdate();
-
-        return onceQuery(year, month, day);
-
+        return queryId(year, month, day);
     }
 
-    private static int onceQuery(String year, String month, String day) throws SQLException {
-        PreparedStatement preparedStatement = connection.prepareStatement(sql1);
+    /**
+     * 查询维度id
+     *
+     * @param year
+     * @param month
+     * @param day
+     * @return
+     * @throws SQLException
+     */
+    private static int queryId(String year, String month, String day) throws SQLException {
         int i = 0;
-        preparedStatement.setString(++i, year);
-        preparedStatement.setString(++i, month);
-        preparedStatement.setString(++i, day);
-        ResultSet resultSet = preparedStatement.executeQuery();
-        if (resultSet.getFetchSize() != 0)
-            return resultSet.getInt(i);
-        return i;
+        query.setString(++i, year);
+        query.setString(++i, month);
+        query.setString(++i, day);
+
+        ResultSet resultSet = query.executeQuery();
+        if (resultSet.next()) {
+            return resultSet.getInt(1);
+        }
+        return 0;
     }
 }

@@ -8,63 +8,86 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+/**
+ * 联系人维度
+ *
+ * @author zhaofanqi
+ */
 public class ConsumerId {
+
     private static Connection connection = null;
-    private static String sql1 = "SELECT `id`  FROM `tb_contacts` WHERE `telephone`=?;";
-    private static String sql2 = "INSERT INTO `tb_contacts` VALUES(NULL,?,?);";
+
+    private static PreparedStatement query;
+
+    private static PreparedStatement insert;
 
     static {
         try {
             connection = JDBCInstance.getInstance();
-            sql1 = "SELECT `id`  FROM `tb_contacts` WHERE `telephone`=?;";
-            sql2 = "INSERT INTO `tb_contacts` VALUES(NULL,?,?);";
+
+            query = connection.prepareStatement("SELECT `id`  FROM `tb_contacts` WHERE `telephone`=?;");
+            insert = connection.prepareStatement("INSERT INTO `tb_contacts` VALUES(NULL,?,?);");
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public int getId(ConsumerMapper consumerMapper) {
-        String phoneNum = consumerMapper.getPhoneNum();
-        String conName = consumerMapper.getConName();
+    /**
+     * 获取联系人维度id
+     *
+     * @param consumerMapper
+     * @return
+     * @throws SQLException
+     */
+    public static int getId(ConsumerMapper consumerMapper) {
         try {
+            String phoneNum = consumerMapper.getPhoneNum();
+            int onceResult = queryId(phoneNum);
+            if (onceResult != 0) {
+                return onceResult;
+            }
 
-            // String sql = "select id  from tb_contacts where telephone=?";
-//            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-//            int i=0;
-//            preparedStatement.setString(++i,phoneNum);
-//            ResultSet resultSet = preparedStatement.executeQuery();
-            /*
-            对初次查询结果做分析，若存在则直接返回，若不存在，则需要插入表格并返回插入数据的主键
-             */
-            int onceResult = onceQuery(phoneNum);
-            if (onceResult != 0) return onceResult;
-
-            onceResult = twiceQuery(phoneNum, conName);
-            return onceResult;
-
+            return insertAndQueryId(phoneNum, consumerMapper.getConName());
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+        System.err.println("com.atguigu.obtainId.ConsumerId.getId: 获取联系人维度id获取为空");
+        return 0;
+    }
+
+    /**
+     * 插入联系人并查询id
+     *
+     * @param phoneNum
+     * @param conName
+     * @return
+     * @throws SQLException
+     */
+    private static int insertAndQueryId(String phoneNum, String conName) throws SQLException {
+        // 插入
+        int i = 0;
+        insert.setString(++i, phoneNum);
+        insert.setString(++i, conName);
+        insert.executeUpdate();
+
+        // 查询
+        return queryId(phoneNum);
+    }
+
+    /**
+     * 查询联系人id
+     *
+     * @param phoneNum
+     * @return
+     * @throws SQLException
+     */
+    private static int queryId(String phoneNum) throws SQLException {
+        int i = 0;
+        query.setString(++i, phoneNum);
+        ResultSet resultSet = query.executeQuery();
+        if (resultSet.next()) {
+            return resultSet.getInt(1);
         }
         return 0;
-
-    }
-
-    private int twiceQuery(String phoneNum, String conName) throws SQLException {
-        PreparedStatement preparedStatement = connection.prepareStatement(sql2);
-        int i = 0;
-        preparedStatement.setString(++i, phoneNum);
-        preparedStatement.setString(++i, conName);
-        preparedStatement.executeUpdate();
-        return onceQuery(phoneNum);
-    }
-
-    private static int onceQuery(String phoneNum) throws SQLException {
-        PreparedStatement preparedStatement = connection.prepareStatement(sql1);
-        int i = 0;
-        preparedStatement.setString(++i, phoneNum);
-        ResultSet resultSet = preparedStatement.executeQuery();
-        if (resultSet.getFetchSize() != 0)
-            return resultSet.getInt(i);
-        return i;
     }
 }

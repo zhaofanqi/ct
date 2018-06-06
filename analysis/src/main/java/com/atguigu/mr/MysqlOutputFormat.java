@@ -19,11 +19,17 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+/**
+ * mysql输出
+ *
+ * @author zhaofanqi
+ */
 public class MysqlOutputFormat extends OutputFormat<CommMapper, CountDuration> {
+
     private FileOutputCommitter committer = null;
 
     @Override
-    public RecordWriter<CommMapper, CountDuration> getRecordWriter(TaskAttemptContext context) throws IOException, InterruptedException {
+    public RecordWriter<CommMapper, CountDuration> getRecordWriter(TaskAttemptContext context) {
         //重写输出方法
         Connection connection = null;
         try {
@@ -37,12 +43,12 @@ public class MysqlOutputFormat extends OutputFormat<CommMapper, CountDuration> {
     }
 
     @Override
-    public void checkOutputSpecs(JobContext context) throws IOException, InterruptedException {
+    public void checkOutputSpecs(JobContext context) {
 
     }
 
     @Override
-    public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException, InterruptedException {
+    public OutputCommitter getOutputCommitter(TaskAttemptContext context) throws IOException {
         if (committer == null) {
             Path output = getOutputPath(context);
             committer = new FileOutputCommitter(output, context);
@@ -55,6 +61,12 @@ public class MysqlOutputFormat extends OutputFormat<CommMapper, CountDuration> {
         return name == null ? null : new Path(name);
     }
 
+
+    /**
+     * mysql 写
+     *
+     * @author zhaofanqi
+     */
     static class MysqlRecordWriter extends RecordWriter<BaseMapper, CountDuration> {
         private Connection connection;
         private PreparedStatement preparedStatement;
@@ -63,9 +75,8 @@ public class MysqlOutputFormat extends OutputFormat<CommMapper, CountDuration> {
 
         private MysqlRecordWriter(Connection connection) {
             this.connection = connection;
-            String sql = "INSERT INTO `tb_call` VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE `call_sum`=? ,`call_duration_sum`=?;";
             try {
-                preparedStatement = connection.prepareStatement(sql);
+                preparedStatement = connection.prepareStatement("INSERT INTO `tb_call` VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE `call_sum`=? ,`call_duration_sum`=?;");
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -75,25 +86,25 @@ public class MysqlOutputFormat extends OutputFormat<CommMapper, CountDuration> {
         key中的数据：commMapper，但是consumerMapper和DateMapper的内容作为了它的属性
          */
         @Override
-        public void write(BaseMapper key, CountDuration value) throws IOException, InterruptedException {
-            //查询用户id 无则插入并返回插入的id
-            //查询日期id 无则插入并返回插入的id
-            //将拼接的id_date_contact,id_date_dimension ,id_contact,call_sum,call_duration_sum
-
+        public void write(BaseMapper key, CountDuration value) {
             CommMapper commMapper = (CommMapper) key;
-            //获取第二个参数
+
+            // 时间维度id
             DateMapper dateMapper = commMapper.getDateMapper();
             int idDateDimension = DateId.getId(dateMapper);
 
-            //获取第三个参数
+            // 联系人维度id
             ConsumerMapper consumerMapper = commMapper.getConsumerMapper();
-            ConsumerId consumerId = new ConsumerId();
-            int idContact = consumerId.getId(consumerMapper);
+            int idContact = ConsumerId.getId(consumerMapper);
 
-            //获取第一个参数
+            // 维度id获取为空退出
+            if (idDateDimension == 0 || idContact == 0) {
+                System.err.println("com.atguigu.mr.MysqlOutputFormat.MysqlRecordWriter.write: 维度id获取为空退出");
+                return;
+            }
+
             String idDateContact = idContact + "_" + idDateDimension;
 
-            //获取第四第五个参数
             String callSum = value.getCountSum();
             String callDurationSum = value.getDurationSum();
             synchronized (this) {
@@ -119,12 +130,10 @@ public class MysqlOutputFormat extends OutputFormat<CommMapper, CountDuration> {
                     e.printStackTrace();
                 }
             }
-
-
         }
 
         @Override
-        public void close(TaskAttemptContext context) throws IOException, InterruptedException {
+        public void close(TaskAttemptContext context) {
             if (preparedStatement != null) {
                 try {
                     preparedStatement.executeBatch();

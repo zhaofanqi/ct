@@ -17,26 +17,32 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
-
+/**
+ * 协处理器
+ *
+ * @author  zhaofanqi
+ */
 public class DoubleWrite extends BaseRegionObserver {
     private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     //rowkey 格式为：recordHash+"_"+caller+"_"+buildTime+"_"+callee+"_"+flag+"_"+duration;
     @Override
     public void postPut(final ObserverContext<RegionCoprocessorEnvironment> e,
                         final Put put, final WALEdit edit, final Durability durability)  {
-        //此时还是需要往表中写数据
+        //作用：避免误操作表
         String befTable = e.getEnvironment().getRegion().getRegionInfo().getTable().getNameAsString();
         String curTable = KafkaUtils.properties.getProperty("tableName");
-        if (!curTable.equals(befTable)) return;
-        //这表示的是获取rowKey
-        byte[] row = put.getRow();
-        System.out.println("this is row-----------------------------see "+Bytes.toString(row));
-        String[] record= Bytes.toString(row).split("_");
-        //  String[] record = row.toString().split("_");
-
-        String flag = record[4];
-        if ("0".equals(flag))
+        if (!curTable.equals(befTable)) {
             return;
+        }
+        //rowKey ：recordHash+"_"+caller+"_"+buildTime+"_"+callee+"_"+flag+"_"+duration;
+        byte[] row = put.getRow();
+        String[] record= Bytes.toString(row).split("_");
+        //flag避免重复操作
+        String flag = record[4];
+        if ("0".equals(flag)){
+            return;
+        }
+
         flag = "0";
         String caller = record[1];
         String buildTime = record[2];
@@ -48,7 +54,9 @@ public class DoubleWrite extends BaseRegionObserver {
         }
         String callee = record[3];
         String duration = record[5];
+        //
         String rowKeyWithFlag = HbaseUtil.getRowKeyWithFlag(callee, caller, buildTime, duration, "0");
+
         Put newPut = new Put(Bytes.toBytes(rowKeyWithFlag));
         newPut.addColumn(Bytes.toBytes("f2"), Bytes.toBytes("call1"), Bytes.toBytes(callee));
         newPut.addColumn(Bytes.toBytes("f2"), Bytes.toBytes("call2"), Bytes.toBytes(caller));

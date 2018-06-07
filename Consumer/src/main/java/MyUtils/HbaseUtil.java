@@ -13,6 +13,11 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.TreeSet;
 
+/**
+ * hbase的基础对象获取
+ *
+ * @author  zhaofanqi
+ */
 public class HbaseUtil {
     private static Configuration configuration;
     public  static Connection connection = null;
@@ -27,6 +32,7 @@ public class HbaseUtil {
             connection = ConnectionFactory.createConnection(configuration);
             //获取admin对象
             admin = connection.getAdmin();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -68,8 +74,12 @@ public class HbaseUtil {
 
     public static void close(Connection connection, Admin admin, Table... table) {
         try {
-            if (connection != null) connection.close();
-            if (admin != null) admin.close();
+            if (connection != null) {
+                connection.close();
+            }
+            if (admin != null) {
+                admin.close();
+            }
             if (table != null) {
                 for (Table table1 : table) {
                     table1.close();
